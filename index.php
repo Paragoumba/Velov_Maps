@@ -3,13 +3,11 @@
     global $keys;
 
     $keys = array();
-
     $file_content = explode("\n", file_get_contents("keys"));
 
     foreach ($file_content as $row){
 
         $row = explode(" ", $row);
-
         $keys[$row[0]] = $row[1];
 
     }
@@ -72,7 +70,7 @@ function get_closest_station_without_bikes($loc, $contract){
 	$stations = json_decode(file_get_contents(str_replace(" ", "%20", "https://api.jcdecaux.com/vls/v1/stations?contract=$contract&apiKey=" . $keys["jcd"])), true);
 	$min = 100000;
 	$closest = null;
-	
+
 	foreach ($stations as $key => $value){
 
 		//$distance = get_path($value["position"]["lat"], $value["position"]["lng"], $loc["position"]["lat"], $loc["position"]["lon"], "foot", false)["distance"];
@@ -117,9 +115,9 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 }?>
 <!DOCTYPE html>
 
-<html>
+<html lang="fr">
 	<head>
-		<title>Velo'v Maps</title>
+		<title>Vélo'v Maps</title>
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
         <link rel="stylesheet" href="css/style.css">
 		<link rel="icon" href="res/velo'v-50x50.png">
@@ -127,9 +125,9 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 	<body>
 		<div class="container-fluid">
 			<div class="row">
-				<h1 class="card card-header bg-light col-lg-3 text-center border-left-0 border-top-0 rounded-0 py-1 d-block"><img src="res/logo.png" class="align-bottom"></h1>
+				<h1 class="card card-header bg-light col-lg-3 text-center border-left-0 border-top-0 rounded-0 py-1 d-block"><img src="res/logo.png" alt="Vélo'v Logo" class="align-bottom"></h1>
 				<h3 class="card card-header bg-light col-lg-9 text-center border-left-0 border-top-0 rounded-0"><?php echo isset($_POST["search"]) ? "Voici votre trajet" : "Entrez vos adresses de départ et d'arrivée"?></h3>
-				<form method="post" class="px-0 col-lg-3">
+				<form method="post" class="px-0 col-sm-3">
 					<div class="card bg-light border-top-0 rounded-0">
 						<h5 class="card-header text-center">Adresse de départ</h5>
 						<div class="card-body">
@@ -180,13 +178,13 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 							</div>
 							<input type="hidden" name="search" value="1">
                             <div class="form-row">
-							    <input type="submit" class="btn btn-danger offset-lg-2 col-lg-3">
-							    <input type="reset" class="btn btn-danger offset-lg-2 col-lg-3">
+							    <input type="submit" class="btn btn-danger offset-sm-0 offset-1 col-sm-5 col-4">
+							    <input type="reset" class="btn btn-danger offset-2 col-sm-5 col-4">
                             </div>
 						</div>
 					</div>
 				</form>
-				<div class="col-lg-9 px-0" id="Map"></div><?php get_keys();
+				<div class="col-sm-9 px-0" id="Map"></div><?php get_keys();
 				
                 if (isset($_POST["search"])){
 			
@@ -196,6 +194,28 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 
 					$starting_station = get_closest_station_with_bikes($starting_position, "Lyon");
 					$arrival_station = get_closest_station_without_bikes($arrival_position, "Lyon");
+
+					$paths = array(
+					    get_path($starting_position["lat"], $starting_position["lon"], $starting_station["position"]["lat"], $starting_station["position"]["lng"], "foot", true),
+                        get_path($starting_station["position"]["lat"], $starting_station["position"]["lng"], $arrival_station["position"]["lat"], $arrival_station["position"]["lng"], "bike", true),
+                        get_path($arrival_station["position"]["lat"], $arrival_station["position"]["lng"], $arrival_position["lat"], $arrival_position["lon"], "foot", true)
+                    );
+
+					/*foreach ($paths as $path) {
+
+                        println("<ol class='card px-0 bg-light col-lg-4 mb-0 border-left-0 rounded-0' onClick='toggleHide()'>");
+                        println("                  <h2 class='card-header text-center'>Itinéraire de " . number_format($path['distance'] / 1000, 2) . "km</h2>");
+                        println("                  <div class='card-body toggle'>");
+
+                        foreach ($path["instructions"] as $key => $value) {
+
+                            println("                         	<li class='card-text mx-3'>" . $value["text"] . "</li>");
+
+                        }
+
+                        println("                     </div>\n               </ol>");
+
+                    }*/
 
 					$path1 = get_path($starting_position["lat"], $starting_position["lon"], $starting_station["position"]["lat"], $starting_station["position"]["lng"], "foot", true);
                     $path2 = get_path($starting_station["position"]["lat"], $starting_station["position"]["lng"], $arrival_station["position"]["lat"], $arrival_station["position"]["lng"], "bike", true);
@@ -244,7 +264,7 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 				}?>
 			</div>
 		</div>
-		<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+		<script src="https://www.openlayers.org/api/OpenLayers.js"></script>
 		<script>
 			map = new OpenLayers.Map("Map");
 			
@@ -303,12 +323,11 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 			    echo "var averagePosition = new OpenLayers.LonLat(" . $average_position["lon"] . "," . $average_position["lat"] . ").transform(fromProjection, toProjection);
 			
 			    map.setCenter(averagePosition, zoom);
-			
 			    map.addControl(new OpenLayers.Control.DrawFeature(lineLayer, OpenLayers.Handler.Path));    
 			                                     
 			    var points1 = new Array(";
 
-			    foreach ($path1["points"]["coordinates"] as $key => $value){
+			    foreach ($paths[0]["points"]["coordinates"] as $key => $value){
 
 			        if ($key != 0) echo ",";
 
@@ -320,7 +339,7 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 			    
 			    var points2 = new Array(";
 
-			    foreach ($path2["points"]["coordinates"] as $key => $value){
+			    foreach ($paths[1]["points"]["coordinates"] as $key => $value){
 
 			        if ($key != 0) echo ",";
 
@@ -332,7 +351,7 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 			    
 			    var points3 = new Array(";
 
-			    foreach ($path3["points"]["coordinates"] as $key => $value){
+			    foreach ($paths[2]["points"]["coordinates"] as $key => $value){
 
                     if ($key != 0) echo ",";
 
@@ -370,24 +389,7 @@ function get_path($lat1, $lon1, $lat2, $lon2, $vehicle, $detailed){
 		        map.setCenter(position, zoom);";
 
 			}?>
-			function toggleHide(){
-				
-				var toggleElts = document.getElementsByClassName("toggle");
-
-				for (var elt in toggleElts) {
-
-                    if (toggleElts[elt].style.getPropertyValue("display") === "none") {
-
-
-                        toggleElts[elt].style.setProperty("display", "", null);
-
-                    } else {
-
-                        toggleElts[elt].style.setProperty("display", "none", null);
-
-                    }
-                }
-			}
 		</script>
+    <script src="js/toggleHide.js"></script>
 	</body>
 </html>
